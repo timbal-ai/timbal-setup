@@ -1,6 +1,6 @@
 {
   "name": "@timbal-ai/timbal-setup",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Configure any AI coding agent with the Timbal MCP server and skill files",
   "main": "lib/index.js",
   "bin": {
@@ -16,7 +16,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "test": "node --test test/",
+    "test": "node --test test/credentials.test.js test/agents.test.js test/mcp.test.js",
     "test:watch": "node --test --watch test/",
     "lint": "eslint lib/ bin/",
     "lint:fix": "eslint lib/ bin/ --fix",

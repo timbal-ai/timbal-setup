@@ -26,9 +26,9 @@ describe('ALL_AGENTS', () => {
     }
   });
 
-  test('claude-code settingsFile returns path ending in settings.json', () => {
+  test('claude-code settingsFile returns path ending in .claude.json', () => {
     const agent = ALL_AGENTS.find((a) => a.id === 'claude-code');
-    assert.ok(agent.settingsFile().endsWith('settings.json'));
+    assert.ok(agent.settingsFile().endsWith('.claude.json'));
   });
 
   test('claude-code skillsDir returns path containing timbal', () => {

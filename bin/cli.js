@@ -96,7 +96,7 @@ function runStatus(agentFilter) {
     const skillVersion = readInstalledVersion(agent.skillsDir());
 
     if (mcpInstalled) {
-      logSuccess(`${agent.name} — MCP server configured (${agent.settingsFile()})`);
+      logSuccess(`${agent.name} — MCP server configured`);
     } else {
       logError(`${agent.name} — MCP server NOT configured`);
     }
@@ -125,8 +125,12 @@ function runUninstall(agentFilter) {
       continue;
     }
 
-    removeMcpConfig(agent.settingsFile());
-    logSuccess(`${agent.name} — MCP server entry removed from ${agent.settingsFile()}`);
+    const removeResult = removeMcpConfig(agent.settingsFile());
+    if (removeResult.ok) {
+      logSuccess(`${agent.name} — MCP server removed`);
+    } else {
+      logError(`${agent.name} — Failed to remove MCP server: ${removeResult.message}`);
+    }
 
     const removed = uninstallSkills(agent.skillsDir());
     if (removed) {
@@ -171,8 +175,13 @@ function runInstall(opts) {
     }
 
     // Write MCP config
-    writeMcpConfig(agent.settingsFile(), token);
-    logSuccess(`${agent.name} — MCP server configured in ${agent.settingsFile()}`);
+    const mcpResult = writeMcpConfig(agent.settingsFile(), token);
+    if (mcpResult.ok) {
+      logSuccess(`${agent.name} — MCP server configured`);
+    } else {
+      logError(`${agent.name} — Failed to configure MCP server: ${mcpResult.message}`);
+      continue;
+    }
 
     // Install skills
     const result = installSkills(agent.skillsDir(), { force: opts.force });
