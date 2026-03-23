@@ -81,6 +81,43 @@ describe('Cursor MCP config (file-based)', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Windsurf MCP config (uses serverUrl instead of url)
+// ---------------------------------------------------------------------------
+
+describe('Windsurf MCP config (file-based)', () => {
+  const agent = ALL_AGENTS.find((a) => a.id === 'windsurf');
+
+  test('writeMcp creates config with serverUrl field', withTmpConfig(agent, () => {
+    const result = agent.writeMcp('t2_wind_token');
+    assert.ok(result.ok);
+    const config = JSON.parse(readFileSync(agent._configPath(), 'utf8'));
+    assert.ok(config.mcpServers.timbal);
+    assert.equal(config.mcpServers.timbal.serverUrl, 'https://api.timbal.ai/mcp');
+    assert.equal(config.mcpServers.timbal.headers.Authorization, 'Bearer t2_wind_token');
+    // Should NOT have a 'url' field
+    assert.equal(config.mcpServers.timbal.url, undefined);
+  }));
+
+  test('hasMcp returns true after write, false after remove', withTmpConfig(agent, () => {
+    assert.equal(agent.hasMcp(), false);
+    agent.writeMcp('t2_tok');
+    assert.equal(agent.hasMcp(), true);
+    agent.removeMcp();
+    assert.equal(agent.hasMcp(), false);
+  }));
+
+  test('preserves existing servers', withTmpConfig(agent, () => {
+    writeFileSync(agent._configPath(), JSON.stringify({
+      mcpServers: { other: { serverUrl: 'https://other.example.com' } },
+    }));
+    agent.writeMcp('t2_tok');
+    const config = JSON.parse(readFileSync(agent._configPath(), 'utf8'));
+    assert.ok(config.mcpServers.other, 'existing server preserved');
+    assert.ok(config.mcpServers.timbal, 'timbal added');
+  }));
+});
+
+// ---------------------------------------------------------------------------
 // Codex MCP config (TOML-based, uses config.toml)
 // ---------------------------------------------------------------------------
 

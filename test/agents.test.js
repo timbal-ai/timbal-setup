@@ -9,11 +9,11 @@ import assert from 'node:assert/strict';
 import { ALL_AGENTS, detectAgents, getAgents } from '../lib/agents.js';
 
 describe('ALL_AGENTS', () => {
-  test('includes claude-code, cursor, and codex entries', () => {
+  test('includes all expected agent entries', () => {
     const ids = ALL_AGENTS.map((a) => a.id);
-    assert.ok(ids.includes('claude-code'), 'should have claude-code agent');
-    assert.ok(ids.includes('cursor'), 'should have cursor agent');
-    assert.ok(ids.includes('codex'), 'should have codex agent');
+    for (const expected of ['claude-code', 'cursor', 'codex', 'windsurf', 'gemini-cli']) {
+      assert.ok(ids.includes(expected), `should have ${expected} agent`);
+    }
   });
 
   test('every agent has required fields', () => {
@@ -64,6 +64,22 @@ describe('ALL_AGENTS', () => {
     const agent = ALL_AGENTS.find((a) => a.id === 'codex');
     assert.ok(typeof agent.agentsMdPath === 'function');
     assert.ok(agent.agentsMdPath().endsWith('AGENTS.md'));
+  });
+
+  test('windsurf skillsDir returns null', () => {
+    const agent = ALL_AGENTS.find((a) => a.id === 'windsurf');
+    assert.equal(agent.skillsDir(), null);
+  });
+
+  test('gemini-cli has agentsMdPath pointing to GEMINI.md', () => {
+    const agent = ALL_AGENTS.find((a) => a.id === 'gemini-cli');
+    assert.ok(typeof agent.agentsMdPath === 'function');
+    assert.ok(agent.agentsMdPath().endsWith('GEMINI.md'));
+  });
+
+  test('gemini-cli skillsDir returns null', () => {
+    const agent = ALL_AGENTS.find((a) => a.id === 'gemini-cli');
+    assert.equal(agent.skillsDir(), null);
   });
 });
 
