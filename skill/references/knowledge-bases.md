@@ -2,189 +2,128 @@
 
 ## Overview
 
-Timbal knowledge bases support three search modes:
+Timbal knowledge bases are queried via SQL using the `query_knowledge_base` MCP tool. Three special search functions are available for semantic retrieval:
 
-| Mode | When to use |
-|------|-------------|
-| `vector` | Semantic / conceptual similarity ("find documents about authentication patterns") |
-| `fts` | Keyword / exact phrase matching ("find documents containing the exact string 'OAuth2'") |
-| `hybrid` | Best of both worlds — use this as the default for most queries |
+| Function | When to use |
+|----------|-------------|
+| `vector_search('table', query, limit)` | Semantic / conceptual similarity ("find documents about authentication patterns") |
+| `fts_search('table', query, limit)` | Keyword / exact phrase matching ("find documents containing 'OAuth2'") |
+| `hybrid_search('table', query, query, limit)` | Best of both worlds — use this as the default for most queries |
+
+All search queries go through `query_knowledge_base`. String parameters in search positions are automatically embedded into vectors.
 
 ---
 
-## MCP Tool: `timbal_kb_query`
+## Setup: always do this first
+
+Before any query, you must set the project context and inspect the schema:
+
+```
+// 1. Set project context
+mcp__timbal__set_project_context({ git_remote_url: "<git-remote-url>" })
+
+// 2. Get the schema so you know table names and columns
+mcp__timbal__get_knowledge_base_schema()
+```
+
+The schema returns `CREATE TABLE` statements — use these to understand available tables, columns, and types before writing queries.
+
+---
+
+## MCP Tool: `query_knowledge_base`
 
 ### Parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `knowledge_base_id` | string | yes | ID of the knowledge base to search |
-| `query` | string | yes | The search query text |
-| `search_type` | `"vector"` \| `"fts"` \| `"hybrid"` | no | Default: `"hybrid"` |
-| `top_k` | integer | no | Number of results to return. Default: 5, max: 50 |
-| `filters` | object | no | Metadata filters (see below) |
-| `min_score` | float | no | Minimum relevance score threshold (0.0–1.0) |
+| `sql` | string | yes | SQL query. Use `$1`, `$2`, etc. for parameter placeholders |
+| `params` | array | no | Positional parameters. Strings in search positions are auto-embedded |
 
-### Basic vector search
+---
+
+## Search examples
+
+### Vector search (semantic similarity)
 
 ```json
 {
-  "tool": "timbal_kb_query",
-  "arguments": {
-    "knowledge_base_id": "kb_abc123",
-    "query": "how do I reset my password?",
-    "search_type": "vector",
-    "top_k": 5
-  }
+  "sql": "SELECT * FROM vector_search('documents', $1, 5)",
+  "params": ["how do I reset my password?"]
 }
 ```
 
-### Full-text search (fts_search)
-
-Use FTS when you need exact keyword matching:
+### Full-text search (BM25 keyword matching)
 
 ```json
 {
-  "tool": "timbal_kb_query",
-  "arguments": {
-    "knowledge_base_id": "kb_abc123",
-    "query": "SAML SSO configuration",
-    "search_type": "fts",
-    "top_k": 10
-  }
+  "sql": "SELECT * FROM fts_search('documents', $1, 10)",
+  "params": ["SAML SSO configuration"]
 }
 ```
 
 ### Hybrid search (recommended default)
 
+Hybrid search takes two query parameters — one for vector search, one for full-text search. Typically you pass the same string for both:
+
 ```json
 {
-  "tool": "timbal_kb_query",
-  "arguments": {
-    "knowledge_base_id": "kb_abc123",
-    "query": "authentication best practices",
-    "search_type": "hybrid",
-    "top_k": 8,
-    "min_score": 0.4
-  }
+  "sql": "SELECT * FROM hybrid_search('documents', $1, $2, 8)",
+  "params": ["authentication best practices", "authentication best practices"]
 }
 ```
 
 ---
 
-## Metadata filtering
+## Combining search with SQL
 
-Use `filters` to narrow results by document metadata. Filters use a simple key/value or comparison syntax:
+Because search functions return result sets, you can use them in standard SQL — filter, join, aggregate:
 
-### Exact match
+### Search with WHERE filter
 
 ```json
 {
-  "filters": {
-    "category": "security",
-    "language": "en"
-  }
+  "sql": "SELECT * FROM hybrid_search('documents', $1, $2, 20) WHERE category = 'security'",
+  "params": ["access control", "access control"]
 }
 ```
 
-### Range / comparison
+### Search and select specific columns
 
 ```json
 {
-  "filters": {
-    "published_at": { "gte": "2024-01-01" },
-    "version": { "lte": "3.0" }
-  }
-}
-```
-
-### Array / IN filter
-
-```json
-{
-  "filters": {
-    "tags": { "in": ["authentication", "oauth", "sso"] }
-  }
+  "sql": "SELECT title, content, score FROM vector_search('documents', $1, 5)",
+  "params": ["deployment guide"]
 }
 ```
 
 ---
 
-## Pagination
+## Analytical SQL queries
 
-Use `offset` and `top_k` together to paginate through results:
-
-```json
-{
-  "tool": "timbal_kb_query",
-  "arguments": {
-    "knowledge_base_id": "kb_abc123",
-    "query": "deployment guide",
-    "search_type": "hybrid",
-    "top_k": 10,
-    "offset": 20
-  }
-}
-```
-
----
-
-## DuckDB SQL queries against knowledge base data
-
-Use `timbal_sql_query` to run analytical SQL over indexed data:
-
-### List all documents in a knowledge base
-
-```json
-{
-  "tool": "timbal_sql_query",
-  "arguments": {
-    "query": "SELECT id, title, created_at FROM kb_documents WHERE knowledge_base_id = 'kb_abc123' ORDER BY created_at DESC LIMIT 20"
-  }
-}
-```
+Use plain SQL (no search functions) for structured queries:
 
 ### Count documents by category
 
 ```json
 {
-  "tool": "timbal_sql_query",
-  "arguments": {
-    "query": "SELECT metadata->>'category' AS category, COUNT(*) AS doc_count FROM kb_documents WHERE knowledge_base_id = 'kb_abc123' GROUP BY 1 ORDER BY 2 DESC"
-  }
+  "sql": "SELECT category, COUNT(*) AS doc_count FROM documents GROUP BY category ORDER BY doc_count DESC"
 }
 ```
 
-### Find recently updated documents
+### List recently updated documents
 
 ```json
 {
-  "tool": "timbal_sql_query",
-  "arguments": {
-    "query": "SELECT id, title, updated_at FROM kb_documents WHERE knowledge_base_id = 'kb_abc123' AND updated_at > NOW() - INTERVAL '7 days' ORDER BY updated_at DESC"
-  }
+  "sql": "SELECT id, title, updated_at FROM documents ORDER BY updated_at DESC LIMIT 20"
 }
 ```
 
----
-
-## Response format
-
-`timbal_kb_query` returns an array of result objects:
+### Aggregate by metadata field
 
 ```json
-[
-  {
-    "id": "doc_xyz789",
-    "score": 0.87,
-    "content": "To reset your password, navigate to Settings > Security...",
-    "metadata": {
-      "title": "Password Reset Guide",
-      "category": "support",
-      "url": "https://docs.example.com/password-reset"
-    }
-  }
-]
+{
+  "sql": "SELECT metadata->>'author' AS author, COUNT(*) AS cnt FROM documents GROUP BY author ORDER BY cnt DESC LIMIT 10"
+}
 ```
 
 ---
@@ -192,13 +131,49 @@ Use `timbal_sql_query` to run analytical SQL over indexed data:
 ## Common patterns
 
 ### "What does the docs say about X?"
-Use hybrid search with `top_k: 5`. Present the top results with their `content` and `metadata.url`.
+Use hybrid search with a limit of 5. Present the top results with their content.
+
+```json
+{
+  "sql": "SELECT * FROM hybrid_search('documents', $1, $2, 5)",
+  "params": ["X", "X"]
+}
+```
 
 ### "Find all docs tagged with Y"
-Use metadata filtering with `tags: { in: ["Y"] }` combined with a broad query.
+Use plain SQL with a WHERE clause on metadata:
+
+```json
+{
+  "sql": "SELECT * FROM documents WHERE tags @> ARRAY[$1]",
+  "params": ["Y"]
+}
+```
 
 ### "How many documents cover topic Z?"
-Use `timbal_sql_query` with a COUNT + vector-indexed column, or run a search and count the results.
+Use SQL COUNT:
+
+```json
+{
+  "sql": "SELECT COUNT(*) FROM documents WHERE category = $1",
+  "params": ["Z"]
+}
+```
 
 ### "Give me a summary of the knowledge base contents"
-Use `timbal_sql_query` to aggregate by category/tag, then present the breakdown.
+Aggregate by category or tag to get an overview:
+
+```json
+{
+  "sql": "SELECT category, COUNT(*) AS cnt FROM documents GROUP BY category ORDER BY cnt DESC"
+}
+```
+
+---
+
+## Important notes
+
+- Always call `get_knowledge_base_schema` first to learn the actual table and column names — don't assume they're called `documents`
+- The `params` array uses positional binding: `$1` is `params[0]`, `$2` is `params[1]`, etc.
+- String params in vector/hybrid search positions are automatically embedded — you don't need to handle embeddings yourself
+- For hybrid search, pass two params (one for vector, one for FTS) — usually the same query string for both
