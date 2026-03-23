@@ -55,7 +55,7 @@ Merges the following into `~/.claude/settings.json` (existing entries are never 
 {
   "mcpServers": {
     "timbal": {
-      "url": "https://api.timbal.ai/mcp",
+      "url": "https://api.dev.timbal.ai/mcp",
       "type": "http",
       "headers": {
         "Authorization": "Bearer <your-token>"

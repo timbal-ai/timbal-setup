@@ -44,7 +44,7 @@ describe('Cursor MCP config (file-based)', () => {
     assert.ok(result.ok);
     const config = JSON.parse(readFileSync(agent._configPath(), 'utf8'));
     assert.ok(config.mcpServers.timbal);
-    assert.equal(config.mcpServers.timbal.url, 'https://api.timbal.ai/mcp');
+    assert.equal(config.mcpServers.timbal.url, 'https://api.dev.timbal.ai/mcp');
     assert.equal(config.mcpServers.timbal.headers.Authorization, 'Bearer t2_test_token');
   }));
 
@@ -69,7 +69,7 @@ describe('Cursor MCP config (file-based)', () => {
   test('removeMcp preserves other servers', withTmpConfig(agent, () => {
     writeFileSync(agent._configPath(), JSON.stringify({
       mcpServers: {
-        timbal: { url: 'https://api.timbal.ai/mcp' },
+        timbal: { url: 'https://api.dev.timbal.ai/mcp' },
         other: { url: 'https://other.example.com' },
       },
     }));
@@ -92,7 +92,7 @@ describe('Windsurf MCP config (file-based)', () => {
     assert.ok(result.ok);
     const config = JSON.parse(readFileSync(agent._configPath(), 'utf8'));
     assert.ok(config.mcpServers.timbal);
-    assert.equal(config.mcpServers.timbal.serverUrl, 'https://api.timbal.ai/mcp');
+    assert.equal(config.mcpServers.timbal.serverUrl, 'https://api.dev.timbal.ai/mcp');
     assert.equal(config.mcpServers.timbal.headers.Authorization, 'Bearer t2_wind_token');
     // Should NOT have a 'url' field
     assert.equal(config.mcpServers.timbal.url, undefined);
@@ -138,7 +138,7 @@ describe('Codex MCP config (TOML fallback)', () => {
 
       // Manually call the toml writer with a known path
       const content = readFileSync(configPath, 'utf8');
-      const section = `\n[mcp_servers.timbal]\nurl = "https://api.timbal.ai/mcp"\n\n[mcp_servers.timbal.http_headers]\nAuthorization = "Bearer t2_test"\n`;
+      const section = `\n[mcp_servers.timbal]\nurl = "https://api.dev.timbal.ai/mcp"\n\n[mcp_servers.timbal.http_headers]\nAuthorization = "Bearer t2_test"\n`;
       writeFileSync(configPath, content.trimEnd() + '\n' + section);
 
       const updated = readFileSync(configPath, 'utf8');

@@ -10,7 +10,7 @@ description: "Build AI applications with Timbal — knowledge bases (vector/FTS/
 Timbal is a platform for building and deploying AI applications. It provides:
 
 - **Knowledge Bases** — vector search, full-text search (FTS), and hybrid search over your documents and data, all accessible via SQL with special search functions
-- **MCP Server** — a Model Context Protocol server at `https://api.timbal.ai/mcp` exposing all Timbal capabilities as callable tools
+- **MCP Server** — a Model Context Protocol server at `https://api.dev.timbal.ai/mcp` exposing all Timbal capabilities as callable tools
 - **Workflow Engine** — define multi-step AI workflows in Python using `Agent` and `Workflow` classes, with a codegen CLI (`python -m timbal.codegen`) for safe code transformations
 
 ## When to use Timbal tools
@@ -97,4 +97,4 @@ mcp__timbal__query_knowledge_base({
 - Knowledge base query patterns: see `references/knowledge-bases.md`
 - Codegen CLI (add tools, steps, configure agents): see `references/codegen.md`
 - Timbal documentation: https://docs.timbal.ai
-- MCP server: https://api.timbal.ai/mcp
+- MCP server: https://api.dev.timbal.ai/mcp
