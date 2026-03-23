@@ -18,8 +18,7 @@
 
 import { resolveToken } from '../lib/credentials.js';
 import { ALL_AGENTS, detectAgents, getAgents } from '../lib/agents.js';
-import { writeMcpConfig, removeMcpConfig, hasMcpConfig } from '../lib/mcp.js';
-import { installSkills, uninstallSkills, readInstalledVersion } from '../lib/skills.js';
+import { installSkills, uninstallSkills, readInstalledVersion, installAgentsMd, uninstallAgentsMd, hasAgentsMd } from '../lib/skills.js';
 import { logSuccess, logError, logInfo, logHeader, logFooter, PACKAGE_VERSION } from '../lib/utils.js';
 
 // ---------------------------------------------------------------------------
@@ -92,8 +91,7 @@ function runStatus(agentFilter) {
       continue;
     }
 
-    const mcpInstalled = hasMcpConfig(agent.settingsFile());
-    const skillVersion = readInstalledVersion(agent.skillsDir());
+    const mcpInstalled = agent.hasMcp();
 
     if (mcpInstalled) {
       logSuccess(`${agent.name} — MCP server configured`);
@@ -101,10 +99,21 @@ function runStatus(agentFilter) {
       logError(`${agent.name} — MCP server NOT configured`);
     }
 
-    if (skillVersion) {
-      logSuccess(`${agent.name} — Skills installed at ${agent.skillsDir()} (v${skillVersion})`);
-    } else {
-      logError(`${agent.name} — Skills NOT installed`);
+    if (agent.skillsDir()) {
+      const skillVersion = readInstalledVersion(agent.skillsDir());
+      if (skillVersion) {
+        logSuccess(`${agent.name} — Skills installed at ${agent.skillsDir()} (v${skillVersion})`);
+      } else {
+        logError(`${agent.name} — Skills NOT installed`);
+      }
+    }
+
+    if (agent.agentsMdPath) {
+      if (hasAgentsMd(agent.agentsMdPath())) {
+        logSuccess(`${agent.name} — AGENTS.md configured at ${agent.agentsMdPath()}`);
+      } else {
+        logError(`${agent.name} — AGENTS.md NOT configured`);
+      }
     }
   }
 
@@ -125,18 +134,29 @@ function runUninstall(agentFilter) {
       continue;
     }
 
-    const removeResult = removeMcpConfig(agent.settingsFile());
+    const removeResult = agent.removeMcp();
     if (removeResult.ok) {
       logSuccess(`${agent.name} — MCP server removed`);
     } else {
       logError(`${agent.name} — Failed to remove MCP server: ${removeResult.message}`);
     }
 
-    const removed = uninstallSkills(agent.skillsDir());
-    if (removed) {
-      logSuccess(`${agent.name} — Skills removed from ${agent.skillsDir()}`);
-    } else {
-      logInfo(`${agent.name} — Skills directory was not present`);
+    if (agent.skillsDir()) {
+      const removed = uninstallSkills(agent.skillsDir());
+      if (removed) {
+        logSuccess(`${agent.name} — Skills removed from ${agent.skillsDir()}`);
+      } else {
+        logInfo(`${agent.name} — Skills directory was not present`);
+      }
+    }
+
+    if (agent.agentsMdPath) {
+      const removed = uninstallAgentsMd(agent.agentsMdPath());
+      if (removed) {
+        logSuccess(`${agent.name} — AGENTS.md section removed from ${agent.agentsMdPath()}`);
+      } else {
+        logInfo(`${agent.name} — AGENTS.md section was not present`);
+      }
     }
   }
 
@@ -165,7 +185,6 @@ function runInstall(opts) {
   logSuccess(`Token found via ${source}`);
 
   // Agent configuration
-  const detected = detectAgents(opts.agents.length > 0 ? opts.agents : undefined);
   const all = getAgents(opts.agents.length > 0 ? opts.agents : undefined);
 
   for (const agent of all) {
@@ -175,7 +194,7 @@ function runInstall(opts) {
     }
 
     // Write MCP config
-    const mcpResult = writeMcpConfig(agent.settingsFile(), token);
+    const mcpResult = agent.writeMcp(token);
     if (mcpResult.ok) {
       logSuccess(`${agent.name} — MCP server configured`);
     } else {
@@ -183,21 +202,33 @@ function runInstall(opts) {
       continue;
     }
 
-    // Install skills
-    const result = installSkills(agent.skillsDir(), { force: opts.force });
-    if (result.action === 'skipped') {
-      logInfo(
-        `${agent.name} — Skills already up to date at ${agent.skillsDir()} (v${result.toVersion})`
-      );
-    } else if (result.action === 'updated') {
-      logSuccess(
-        `${agent.name} — Skills updated at ${agent.skillsDir()} ` +
-          `(v${result.fromVersion} → v${result.toVersion})`
-      );
-    } else {
-      logSuccess(
-        `${agent.name} — Skills installed to ${agent.skillsDir()} (v${result.toVersion})`
-      );
+    // Install skills (only if the agent supports a skills directory)
+    if (agent.skillsDir()) {
+      const result = installSkills(agent.skillsDir(), { force: opts.force });
+      if (result.action === 'skipped') {
+        logInfo(
+          `${agent.name} — Skills already up to date at ${agent.skillsDir()} (v${result.toVersion})`
+        );
+      } else if (result.action === 'updated') {
+        logSuccess(
+          `${agent.name} — Skills updated at ${agent.skillsDir()} ` +
+            `(v${result.fromVersion} → v${result.toVersion})`
+        );
+      } else {
+        logSuccess(
+          `${agent.name} — Skills installed to ${agent.skillsDir()} (v${result.toVersion})`
+        );
+      }
+    }
+
+    // Install AGENTS.md (for Codex and similar tools)
+    if (agent.agentsMdPath) {
+      const result = installAgentsMd(agent.agentsMdPath());
+      if (result.action === 'updated') {
+        logSuccess(`${agent.name} — AGENTS.md updated at ${agent.agentsMdPath()}`);
+      } else {
+        logSuccess(`${agent.name} — AGENTS.md installed at ${agent.agentsMdPath()}`);
+      }
     }
   }
 

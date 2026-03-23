@@ -2,7 +2,6 @@
  * agents.test.js
  *
  * Tests for lib/agents.js using Node's built-in test runner.
- * Run with: node --test test/agents.test.js
  */
 
 import { test, describe } from 'node:test';
@@ -10,9 +9,11 @@ import assert from 'node:assert/strict';
 import { ALL_AGENTS, detectAgents, getAgents } from '../lib/agents.js';
 
 describe('ALL_AGENTS', () => {
-  test('includes claude-code entry', () => {
+  test('includes claude-code, cursor, and codex entries', () => {
     const ids = ALL_AGENTS.map((a) => a.id);
     assert.ok(ids.includes('claude-code'), 'should have claude-code agent');
+    assert.ok(ids.includes('cursor'), 'should have cursor agent');
+    assert.ok(ids.includes('codex'), 'should have codex agent');
   });
 
   test('every agent has required fields', () => {
@@ -20,20 +21,11 @@ describe('ALL_AGENTS', () => {
       assert.ok(typeof agent.id === 'string', `${agent.id}: id must be string`);
       assert.ok(typeof agent.name === 'string', `${agent.id}: name must be string`);
       assert.ok(typeof agent.detect === 'function', `${agent.id}: detect must be function`);
-      assert.ok(typeof agent.configDir === 'function', `${agent.id}: configDir must be function`);
-      assert.ok(typeof agent.settingsFile === 'function', `${agent.id}: settingsFile must be function`);
+      assert.ok(typeof agent.writeMcp === 'function', `${agent.id}: writeMcp must be function`);
+      assert.ok(typeof agent.removeMcp === 'function', `${agent.id}: removeMcp must be function`);
+      assert.ok(typeof agent.hasMcp === 'function', `${agent.id}: hasMcp must be function`);
       assert.ok(typeof agent.skillsDir === 'function', `${agent.id}: skillsDir must be function`);
     }
-  });
-
-  test('claude-code settingsFile returns path ending in .claude.json', () => {
-    const agent = ALL_AGENTS.find((a) => a.id === 'claude-code');
-    assert.ok(agent.settingsFile().endsWith('.claude.json'));
-  });
-
-  test('claude-code skillsDir returns path containing timbal', () => {
-    const agent = ALL_AGENTS.find((a) => a.id === 'claude-code');
-    assert.ok(agent.skillsDir().includes('timbal'));
   });
 
   test('detect() returns a boolean', () => {
@@ -41,6 +33,37 @@ describe('ALL_AGENTS', () => {
       const result = agent.detect();
       assert.ok(typeof result === 'boolean', `${agent.id}: detect() should return boolean`);
     }
+  });
+
+  test('hasMcp() returns a boolean', () => {
+    for (const agent of ALL_AGENTS) {
+      const result = agent.hasMcp();
+      assert.ok(typeof result === 'boolean', `${agent.id}: hasMcp() should return boolean`);
+    }
+  });
+
+  test('claude-code skillsDir returns path containing timbal', () => {
+    const agent = ALL_AGENTS.find((a) => a.id === 'claude-code');
+    assert.ok(agent.skillsDir().includes('timbal'));
+  });
+
+  test('cursor skillsDir returns path containing .cursor/skills/timbal', () => {
+    const agent = ALL_AGENTS.find((a) => a.id === 'cursor');
+    const dir = agent.skillsDir();
+    assert.ok(dir.includes('.cursor'));
+    assert.ok(dir.includes('skills'));
+    assert.ok(dir.includes('timbal'));
+  });
+
+  test('codex skillsDir returns null', () => {
+    const agent = ALL_AGENTS.find((a) => a.id === 'codex');
+    assert.equal(agent.skillsDir(), null);
+  });
+
+  test('codex has agentsMdPath method', () => {
+    const agent = ALL_AGENTS.find((a) => a.id === 'codex');
+    assert.ok(typeof agent.agentsMdPath === 'function');
+    assert.ok(agent.agentsMdPath().endsWith('AGENTS.md'));
   });
 });
 
@@ -56,9 +79,11 @@ describe('getAgents', () => {
   });
 
   test('filters to matching agents', () => {
-    const agents = getAgents(['claude-code']);
-    assert.equal(agents.length, 1);
-    assert.equal(agents[0].id, 'claude-code');
+    for (const id of ['claude-code', 'cursor', 'codex']) {
+      const agents = getAgents([id]);
+      assert.equal(agents.length, 1);
+      assert.equal(agents[0].id, id);
+    }
   });
 
   test('returns empty array for unknown agent id', () => {
@@ -83,13 +108,5 @@ describe('detectAgents', () => {
   test('respects filter — unknown agent id returns empty array', () => {
     const agents = detectAgents(['nonexistent-agent-xyz']);
     assert.equal(agents.length, 0);
-  });
-
-  test('filter by known agent id returns at most 1 result', () => {
-    const agents = detectAgents(['claude-code']);
-    assert.ok(agents.length <= 1);
-    if (agents.length === 1) {
-      assert.equal(agents[0].id, 'claude-code');
-    }
   });
 });
