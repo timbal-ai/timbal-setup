@@ -173,16 +173,18 @@ function runInstall(opts) {
   // Token resolution
   const { token, source } = resolveToken({ token: opts.token, profile: opts.profile });
 
-  if (!token) {
-    logError('No Timbal API key found.\n');
-    console.log('  Set it up in one of these ways:');
-    console.log('    1. Run: timbal configure');
-    console.log('    2. Set env var: export TIMBAL_API_KEY=t2_xxx');
-    console.log('    3. Pass directly: npx @timbal-ai/timbal-setup --token t2_xxx\n');
-    process.exit(1);
+  if (token) {
+    logSuccess(`Token found via ${source}`);
+  } else {
+    logInfo('No Timbal API key found — MCP server will be added without auth');
+    logInfo('You will need to complete the OAuth flow when you first use Timbal');
+    console.log('');
+    console.log('  To set a token later, run one of:');
+    console.log('    1. timbal configure');
+    console.log('    2. export TIMBAL_API_KEY=t2_xxx');
+    console.log('    3. npx @timbal-ai/timbal-setup --token t2_xxx');
+    console.log('');
   }
-
-  logSuccess(`Token found via ${source}`);
 
   // Agent configuration
   const all = getAgents(opts.agents.length > 0 ? opts.agents : undefined);
@@ -193,7 +195,7 @@ function runInstall(opts) {
       continue;
     }
 
-    // Write MCP config
+    // Write MCP config (with or without token)
     const mcpResult = agent.writeMcp(token);
     if (mcpResult.ok) {
       logSuccess(`${agent.name} — MCP server configured`);
@@ -230,6 +232,11 @@ function runInstall(opts) {
         logSuccess(`${agent.name} — AGENTS.md installed at ${agent.agentsMdPath()}`);
       }
     }
+  }
+
+  if (!token) {
+    console.log('');
+    logInfo('Remember: complete the OAuth flow or set your API key to authenticate with Timbal');
   }
 
   logFooter();
