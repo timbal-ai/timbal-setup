@@ -1,0 +1,51 @@
+{
+  "name": "@timbal-ai/timbal-setup",
+  "version": "0.1.0",
+  "description": "Configure any AI coding agent with the Timbal MCP server and skill files",
+  "main": "lib/index.js",
+  "bin": {
+    "timbal-setup": "./bin/cli.js"
+  },
+  "type": "module",
+  "private": false,
+  "files": [
+    "bin/",
+    "lib/",
+    "skill/",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test test/",
+    "test:watch": "node --test --watch test/",
+    "lint": "eslint lib/ bin/",
+    "lint:fix": "eslint lib/ bin/ --fix",
+    "format": "prettier --write \"lib/**/*.js\" \"bin/**/*.js\"",
+    "format:check": "prettier --check \"lib/**/*.js\" \"bin/**/*.js\"",
+    "prepublishOnly": "npm run test"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "timbal",
+    "mcp",
+    "setup",
+    "claude",
+    "cursor",
+    "codex",
+    "ai-agent",
+    "skill",
+    "platform"
+  ],
+  "author": "",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/timbal-ai/timbal-setup.git"
+  },
+  "bugs": {
+    "url": "https://github.com/timbal-ai/timbal-setup/issues"
+  },
+  "homepage": "https://github.com/timbal-ai/timbal-setup#readme"
+}
