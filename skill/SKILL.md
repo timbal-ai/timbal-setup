@@ -9,88 +9,51 @@ description: "Build AI applications with Timbal — knowledge bases (vector/FTS/
 
 Timbal is a platform for building and deploying AI applications. It provides:
 
+- **Workflow Engine** — define multi-step AI workflows in Python using `Agent` and `Workflow` classes, with a codegen CLI (`timbal-codegen`) for safe code transformations
 - **Knowledge Bases** — vector search, full-text search (FTS), and hybrid search over your documents and data, all accessible via SQL with special search functions
 - **MCP Server** — a Model Context Protocol server at `https://api.dev.timbal.ai/mcp` exposing all Timbal capabilities as callable tools
-- **Workflow Engine** — define multi-step AI workflows in Python using `Agent` and `Workflow` classes, with a codegen CLI (`python -m timbal.codegen`) for safe code transformations
 
-## When to use Timbal tools
+## Workflow rules — follow these exactly
 
-Use the Timbal MCP tools whenever the user asks you to:
+- **Always use `timbal-codegen` for any workflow modification.** Never use Edit or Write on workflow.py directly — that is an absolute last resort only if the codegen CLI cannot accomplish the task.
+- **Never do a dry-run** before applying codegen changes. Apply directly.
+- **Never verify after applying changes.** No re-reading workflow.py, no get-flow, no post-change checks. timbal-codegen is atomic and will error on failure — trust it.
+- **Never read `references/codegen.md`** for common operations — only read it for rare operations not covered here.
+- **Read workflow.py** to understand the current state when needed. Do not use `get-flow` for this — it returns verbose JSON that wastes tokens.
+- **Chain independent CLI commands with `&&`** in a single Bash call when possible.
 
-- Search or retrieve information from a knowledge base ("find documents about X", "what does our docs say about Y")
-- Run analytical SQL queries against knowledge base data ("how many documents cover topic Z", "list all entries tagged with Y")
-- Look up Timbal documentation, examples, or API references
-- Inspect the current project's settings or KB schema
-- Build or edit a Timbal agent or workflow (using the codegen CLI)
+## Codegen operations (local CLI)
 
-## Available MCP tools
+Use `timbal-codegen` directly — no MCP setup needed. See `references/codegen.md` for the full reference.
 
-All tools are prefixed with `mcp__timbal__` when called. Here are the 5 available tools:
+```bash
+timbal-codegen [--path <workspace>] <operation> [options]
+```
 
-### Setup & context
-- **`set_project_context`** — Detect the org and project from a git remote URL. **Must be called before using `get_project`, `get_knowledge_base_schema`, or `query_knowledge_base`.** Not needed for `whoami` or local CLI tools like `timbal-codegen`.
-  - Parameter: `git_remote_url` (string, required)
+Key operations: `add-tool`, `remove-tool`, `add-step`, `remove-step`, `set-config`, `set-param`, `add-edge`, `remove-edge`, `get-flow`, `get-tools`, `get-models`, `convert-to-workflow`.
 
-### User & project info
-- **`whoami`** — Get information about the currently authenticated user. No parameters.
-- **`get_project`** — Get details of the current project (name, workforce items, settings). Requires `set_project_context` first. No parameters.
+## Knowledge base queries (MCP tools)
 
-### Knowledge base
-- **`get_knowledge_base_schema`** — Get the schema of the knowledge base linked to the current project. Returns SQL DDL (`CREATE TABLE` statements) describing tables, columns, indexes, and constraints. Use this to understand the data structure before writing queries. Requires `set_project_context` first. No parameters.
-- **`query_knowledge_base`** — Execute a SQL query against the knowledge base. This is the primary tool for all data retrieval — both search and analytics. Requires `set_project_context` first.
-  - Parameter: `sql` (string, required) — SQL query with `$1`, `$2`, etc. for parameter placeholders
-  - Parameter: `params` (array, optional) — positional parameters; strings in search positions are auto-embedded into vectors
-  - Supports three special search functions:
-    - `vector_search('table', $1, limit)` — semantic similarity
-    - `fts_search('table', $1, limit)` — full-text BM25
-    - `hybrid_search('table', $1, $2, limit)` — combined vector + text
-
-### Documentation
-If this skill and its references don't cover what you need, search `docs.timbal.ai` via web search as a last resort. Prefer using the information in this skill and `references/` first — it's faster and more reliable than a web lookup.
-
-## Workflow for using Timbal tools
-
-### For knowledge base queries (MCP tools)
 1. **Set context first** — call `set_project_context` with the git remote URL
-2. **Understand the schema** — call `get_knowledge_base_schema` to see available tables and columns
-3. **Query data** — use `query_knowledge_base` with SQL (and search functions for semantic retrieval)
+2. **Understand the schema** — call `get_knowledge_base_schema`
+3. **Query data** — use `query_knowledge_base` with SQL
 
-### For codegen operations (local CLI)
-Use `timbal-codegen` directly — no MCP setup needed. See `references/codegen.md`.
+All MCP tools are prefixed with `mcp__timbal__`. Available tools:
 
-### For documentation lookups
-Use this skill and `references/` first. Only if the answer isn't covered here, fall back to web search on `docs.timbal.ai`.
+- **`set_project_context`** — required before `get_project`, `get_knowledge_base_schema`, or `query_knowledge_base`. Parameter: `git_remote_url`.
+- **`whoami`** — current authenticated user. No setup needed.
+- **`get_project`** — project details. Requires `set_project_context`.
+- **`get_knowledge_base_schema`** — returns SQL DDL for KB tables. Requires `set_project_context`.
+- **`query_knowledge_base`** — execute SQL against the KB. Requires `set_project_context`.
+  - `sql` (string) — use `$1`, `$2` for placeholders
+  - `params` (array, optional) — strings are auto-embedded into vectors
+  - Search functions: `vector_search('table', $1, limit)`, `fts_search('table', $1, limit)`, `hybrid_search('table', $1, $2, limit)`
 
-## How to invoke MCP tools
+Use hybrid search by default. Use plain SQL for aggregation/analytics.
 
-Call tools using the `mcp__timbal__` prefix. Examples:
+## Documentation lookups
 
-```
-// Set project context (always do this first)
-mcp__timbal__set_project_context({ git_remote_url: "https://github.com/acme/my-agent.git" })
-
-// Get KB schema
-mcp__timbal__get_knowledge_base_schema()
-
-// Hybrid search
-mcp__timbal__query_knowledge_base({
-  sql: "SELECT * FROM hybrid_search('documents', $1, $2, 5)",
-  params: ["authentication best practices", "authentication best practices"]
-})
-
-// Standard SQL analytics
-mcp__timbal__query_knowledge_base({
-  sql: "SELECT category, COUNT(*) as cnt FROM documents GROUP BY category ORDER BY cnt DESC"
-})
-```
-
-## Best practices
-
-1. **Call `set_project_context` before KB queries** — `get_project`, `get_knowledge_base_schema`, and `query_knowledge_base` require it; `whoami` and `timbal-codegen` do not
-2. **Always call `get_knowledge_base_schema` before querying** — so you know the actual table names and columns
-3. **Use hybrid search by default** — it combines vector and FTS for best recall
-4. **Use plain SQL for structured/aggregation queries** — search functions are for semantic retrieval, not counting or joining
-5. **For platform questions** — use this skill and its references first; only fall back to web search on `docs.timbal.ai` if the answer isn't here
+Use this skill and `references/` first. Only fall back to web search on `docs.timbal.ai` if the answer isn't here.
 
 ## References
 
