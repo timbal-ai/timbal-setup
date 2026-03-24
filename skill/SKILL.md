@@ -32,6 +32,10 @@ timbal-codegen [--path <workspace>] <operation> [options]
 
 Key operations: `add-tool`, `remove-tool`, `add-step`, `remove-step`, `set-config`, `set-param`, `add-edge`, `remove-edge`, `get-flow`, `get-tools`, `get-models`, `convert-to-workflow`.
 
+**Anthropic models require `max_tokens`** — always set it when using any `anthropic/` model (e.g. `"max_tokens": 4096`). They will fail without it.
+
+**Extended thinking** — supported on Anthropic models via `model_params`. See `references/codegen.md` for per-model thinking modes and examples. Key rule: Opus 4.6 uses `"type": "adaptive"` only; all others use `"type": "enabled"` with `budget_tokens` (must be < `max_tokens`).
+
 ## Knowledge base queries (MCP tools)
 
 1. **Set context first** — call `set_project_context` with the git remote URL
@@ -59,5 +63,6 @@ Use this skill and `references/` first. Only fall back to web search on `docs.ti
 
 - Knowledge base query patterns: see `references/knowledge-bases.md`
 - Codegen CLI (add tools, steps, configure agents): see `references/codegen.md`
+- Migrating n8n workflows to Timbal: see `references/n8n-to-timbal.md`
 - Timbal documentation: https://docs.timbal.ai
 - MCP server: https://api.dev.timbal.ai/mcp

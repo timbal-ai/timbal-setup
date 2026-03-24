@@ -217,7 +217,7 @@ Unified configuration operation. Behavior depends on whether `--name` is provide
 ```bash
 # Configure the Agent entry point (no --name)
 timbal-codegen set-config \
-  --config '{"model": "anthropic/claude-sonnet-4-6", "system_prompt": "You are a helpful assistant.", "max_iter": 5}'
+  --config '{"model": "anthropic/claude-sonnet-4-6", "system_prompt": "You are a helpful assistant.", "max_tokens": 4096, "max_iter": 5}'
 
 # Configure a tool on the Agent (--name = tool runtime name)
 timbal-codegen set-config --name web_search \
@@ -231,6 +231,36 @@ timbal-codegen set-config --config '{"system_prompt": null}'
 ```
 
 Valid Agent fields: `name`, `description`, `model`, `system_prompt`, `max_iter`, `max_tokens`, `temperature`, `base_url`, `api_key`, `model_params`, `skills_path`.
+
+**Important:** Anthropic models **require** `max_tokens` to be set explicitly — they will fail without it. Always include `max_tokens` when configuring an agent with an `anthropic/` model.
+
+#### Extended thinking
+
+Enable thinking via `model_params`. The thinking mode depends on the model:
+
+```bash
+# Opus 4.6 — adaptive only (no budget_tokens)
+timbal-codegen set-config \
+  --config '{"model": "anthropic/claude-opus-4-6", "max_tokens": 16000, "model_params": {"thinking": {"type": "adaptive"}}}'
+
+# Sonnet 4.6 — manual or adaptive
+timbal-codegen set-config \
+  --config '{"model": "anthropic/claude-sonnet-4-6", "max_tokens": 16000, "model_params": {"thinking": {"type": "enabled", "budget_tokens": 10000}}}'
+
+# Other Anthropic models (Sonnet 4.5, Opus 4.5, Haiku 4.5, etc.) — manual
+timbal-codegen set-config \
+  --config '{"model": "anthropic/claude-sonnet-4-5", "max_tokens": 16000, "model_params": {"thinking": {"type": "enabled", "budget_tokens": 10000}}}'
+```
+
+| Model | Supported modes | Notes |
+|---|---|---|
+| `claude-opus-4-6` | `adaptive` only | `budget_tokens` not accepted |
+| `claude-sonnet-4-6` | `enabled` or `adaptive` | `budget_tokens` required for `enabled` |
+| `claude-opus-4-5`, `claude-opus-4-1`, `claude-opus-4` | `enabled` | `budget_tokens` required |
+| `claude-sonnet-4-5`, `claude-sonnet-4` | `enabled` | `budget_tokens` required |
+| `claude-haiku-4-5` | `enabled` | `budget_tokens` required |
+
+**Key rule:** `budget_tokens` must be less than `max_tokens`.
 
 Tool config fields are validated against the tool's schema. Supported configurable tools: `WebSearch`, `CalaSearch`, `Tool` (custom).
 
@@ -357,14 +387,6 @@ workflow.step(agent_a)
 ```
 
 The entry point variable name stays the same (so `timbal.yaml` doesn't need updating). The Agent is moved to a new variable named after its `name` kwarg.
-
-### `rename` — Rename a step or tool
-
-```bash
-timbal-codegen rename --old-name agent_a --to agent_b
-```
-
-Updates the variable, `name=` kwarg, and all references (`tools=[...]`, `depends_on=[...]`, `step_span("...")` calls). Cannot rename the entry point variable (referenced by `timbal.yaml`).
 
 ---
 
