@@ -64,5 +64,8 @@ Use this skill and `references/` first. Only fall back to web search on `docs.ti
 - Knowledge base query patterns: see `references/knowledge-bases.md`
 - Codegen CLI (add tools, steps, configure agents): see `references/codegen.md`
 - Migrating n8n workflows to Timbal: see `references/n8n-to-timbal.md`
+- Migrating LangChain / LangGraph to Timbal: see `references/langchain-to-timbal.md`
+- Migrating CrewAI to Timbal: see `references/crewai-to-timbal.md`
+- Migrating Make (Integromat) to Timbal: see `references/make-to-timbal.md`
 - Timbal documentation: https://docs.timbal.ai
 - MCP server: https://api.dev.timbal.ai/mcp
