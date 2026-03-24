@@ -10,7 +10,7 @@ description: "Build AI applications with Timbal — knowledge bases (vector/FTS/
 Timbal is a platform for building and deploying AI applications. It provides:
 
 - **Workflow Engine** — define multi-step AI workflows in Python using `Agent` and `Workflow` classes, with a codegen CLI (`timbal-codegen`) for safe code transformations
-- **Knowledge Bases** — vector search, full-text search (FTS), and hybrid search over your documents and data, all accessible via SQL with special search functions
+- **Knowledge Bases** — vector search, full-text search (FTS), and hybrid search over your documents and data, powered by DuckDB and accessible via SQL with special search functions
 - **MCP Server** — a Model Context Protocol server at `https://api.dev.timbal.ai/mcp` exposing all Timbal capabilities as callable tools
 
 ## Workflow rules — follow these exactly
@@ -53,14 +53,24 @@ All MCP tools are prefixed with `mcp__timbal__`. Available tools:
   - `params` (array, optional) — strings are auto-embedded into vectors
   - Search functions: `vector_search('table', $1, limit)`, `fts_search('table', $1, limit)`, `hybrid_search('table', $1, $2, limit)`
 
-Use hybrid search by default. Use plain SQL for aggregation/analytics.
+Use hybrid search by default. Use plain SQL for aggregation/analytics. Knowledge bases run on DuckDB — use DuckDB syntax, not PostgreSQL (e.g. `list_contains()` not `@>`).
 
 ## Documentation lookups
 
 Use this skill and `references/` first. Only fall back to web search on `docs.timbal.ai` if the answer isn't here.
 
+## What are you building?
+
+| Goal | Reference |
+|------|-----------|
+| AI workflow or agent | `references/codegen.md` |
+| Knowledge base queries | `references/knowledge-bases.md` |
+| Full-stack app (API + UI + Timbal) | `references/integration.md` (+ `knowledge-bases.md` as needed) |
+| Migrating from another platform | See migration guides below |
+
 ## References
 
+- **Integration** (Elysia API + React UI + Timbal SDK): see `references/integration.md`
 - Knowledge base query patterns: see `references/knowledge-bases.md`
 - Codegen CLI (add tools, steps, configure agents): see `references/codegen.md`
 - Migrating n8n workflows to Timbal: see `references/n8n-to-timbal.md`

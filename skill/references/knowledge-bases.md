@@ -2,7 +2,7 @@
 
 ## Overview
 
-Timbal knowledge bases are queried via SQL using the `query_knowledge_base` MCP tool. Three special search functions are available for semantic retrieval:
+Timbal knowledge bases run on **DuckDB**. They are queried via SQL using the `query_knowledge_base` MCP tool. Three special search functions are available for semantic retrieval:
 
 | Function | When to use |
 |----------|-------------|
@@ -38,6 +38,16 @@ The schema returns `CREATE TABLE` statements — use these to understand availab
 |-----------|------|----------|-------------|
 | `sql` | string | yes | SQL query. Use `$1`, `$2`, etc. for parameter placeholders |
 | `params` | array | no | Positional parameters. Strings in search positions are auto-embedded |
+
+### Multi-statement queries
+
+You can chain multiple SQL statements in a single `sql` string separated by semicolons. Only the **result of the last statement** is returned. This is useful for setting up temporary tables or CTEs before a final query:
+
+```json
+{
+  "sql": "CREATE TEMP TABLE recent AS SELECT * FROM documents WHERE updated_at > '2025-01-01'; SELECT category, COUNT(*) AS cnt FROM recent GROUP BY category ORDER BY cnt DESC"
+}
+```
 
 ---
 
@@ -100,7 +110,7 @@ Because search functions return result sets, you can use them in standard SQL �
 
 ## Analytical SQL queries
 
-Use plain SQL (no search functions) for structured queries:
+DuckDB excels at complex analytical queries. Use plain SQL (no search functions) for structured queries:
 
 ### Count documents by category
 
@@ -126,6 +136,16 @@ Use plain SQL (no search functions) for structured queries:
 }
 ```
 
+### Window functions and complex analytics
+
+DuckDB supports full analytical SQL — window functions, CTEs, UNNEST, etc.:
+
+```json
+{
+  "sql": "WITH ranked AS (SELECT *, ROW_NUMBER() OVER (PARTITION BY category ORDER BY updated_at DESC) AS rn FROM documents) SELECT * FROM ranked WHERE rn <= 3"
+}
+```
+
 ---
 
 ## Common patterns
@@ -141,11 +161,11 @@ Use hybrid search with a limit of 5. Present the top results with their content.
 ```
 
 ### "Find all docs tagged with Y"
-Use plain SQL with a WHERE clause on metadata:
+Use plain SQL with a WHERE clause. DuckDB uses `list_contains` for array membership:
 
 ```json
 {
-  "sql": "SELECT * FROM documents WHERE tags @> ARRAY[$1]",
+  "sql": "SELECT * FROM documents WHERE list_contains(tags, $1)",
   "params": ["Y"]
 }
 ```
@@ -171,9 +191,21 @@ Aggregate by category or tag to get an overview:
 
 ---
 
+## Schema design guidelines
+
+When designing knowledge base schemas:
+
+- **Avoid foreign keys.** DuckDB is optimized for analytical (OLAP) workloads, not transactional (OLTP) ones. Foreign key constraints add overhead without benefit in this context. Denormalize data instead — duplicate fields across tables rather than joining on foreign keys.
+- **Prefer flat, wide tables** over deeply normalized schemas. A single table with all relevant columns is faster and simpler to query than multiple joined tables.
+- **Use DuckDB types** — `VARCHAR`, `INTEGER`, `DOUBLE`, `TIMESTAMP`, `BOOLEAN`, `VARCHAR[]` (lists). DuckDB also supports `STRUCT` and `MAP` for nested data.
+
+---
+
 ## Important notes
 
 - Always call `get_knowledge_base_schema` first to learn the actual table and column names — don't assume they're called `documents`
 - The `params` array uses positional binding: `$1` is `params[0]`, `$2` is `params[1]`, etc.
 - String params in vector/hybrid search positions are automatically embedded — you don't need to handle embeddings yourself
 - For hybrid search, pass two params (one for vector, one for FTS) — usually the same query string for both
+- Multi-statement queries return only the last statement's result
+- This is DuckDB, not PostgreSQL — use DuckDB syntax (e.g. `list_contains()` instead of `@>`, `UNNEST()` for arrays, `strftime()` for date formatting)
