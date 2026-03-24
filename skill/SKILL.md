@@ -67,5 +67,6 @@ Use this skill and `references/` first. Only fall back to web search on `docs.ti
 - Migrating LangChain / LangGraph to Timbal: see `references/langchain-to-timbal.md`
 - Migrating CrewAI to Timbal: see `references/crewai-to-timbal.md`
 - Migrating Make (Integromat) to Timbal: see `references/make-to-timbal.md`
+- Migrating Zapier to Timbal: see `references/zapier-to-timbal.md`
 - Timbal documentation: https://docs.timbal.ai
 - MCP server: https://api.dev.timbal.ai/mcp
