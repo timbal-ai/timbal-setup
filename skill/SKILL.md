@@ -18,7 +18,7 @@ Timbal is a platform for building and deploying AI applications. It provides:
 - **Always use `timbal-codegen` for any workflow modification.** Never use Edit or Write on workflow.py directly — that is an absolute last resort only if the codegen CLI cannot accomplish the task.
 - **Never do a dry-run** before applying codegen changes. Apply directly.
 - **Never verify after applying changes.** No re-reading workflow.py, no get-flow, no post-change checks. timbal-codegen is atomic and will error on failure — trust it.
-- **Never read `references/codegen.md`** for common operations — only read it for rare operations not covered here.
+- **Read `references/codegen.md`** before using the codegen CLI — it has exact syntax, valid fields, and examples for every operation.
 - **Read workflow.py** to understand the current state when needed. Do not use `get-flow` for this — it returns verbose JSON that wastes tokens.
 - **Chain independent CLI commands with `&&`** in a single Bash call when possible.
 

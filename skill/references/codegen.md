@@ -271,7 +271,7 @@ Tool config fields are validated against the tool's schema. Supported configurab
 ```bash
 # Agent step (--config must include "name")
 timbal-codegen add-step --type Agent \
-  --config '{"name": "summarizer", "model": "anthropic/claude-sonnet-4-6"}'
+  --config '{"name": "summarizer", "model": "anthropic/claude-sonnet-4-6", "system_prompt": "Summarize.", "max_tokens": 512}'
 
 # Framework tool as a step
 timbal-codegen add-step --type GmailSearch
@@ -282,6 +282,10 @@ def format_results(items: list[dict], max_items: int = 10) -> str:
     return "\n".join(f"- {item.get(\"title\", \"Untitled\")}" for item in items[:max_items])
 '
 ```
+
+For `--type Agent`, valid `--config` fields are: `name`, `description`, `model`, `system_prompt`, `max_iter`, `max_tokens`, `temperature`, `base_url`, `api_key`, `model_params`, `skills_path`. **`metadata` is not valid here** — use `set-position` after adding the step if you need canvas coordinates.
+
+For `--type <FrameworkTool>` (e.g. `GmailSearch`), use `get-tools` to find the class name first. Tool config can be set afterwards with `set-config --name <tool_name>`.
 
 What it does:
 - Adds necessary imports
