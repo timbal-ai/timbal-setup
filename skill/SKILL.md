@@ -1,6 +1,6 @@
 ---
 name: timbal
-description: "Build AI applications with Timbal — knowledge bases (vector/FTS/hybrid search via SQL), multi-step workflows (timbal.yaml), and MCP server integration. Use this skill whenever the user wants to query a knowledge base, search Timbal documentation, inspect project settings, create or edit timbal.yaml workflows, or build any AI application on the Timbal platform. Also trigger when the user mentions Timbal, knowledge bases, vector search, hybrid search, or timbal.yaml — even if they don't explicitly say 'Timbal'."
+description: "Build AI applications with Timbal — knowledge bases (vector/FTS/hybrid search via SQL), multi-step workflows (timbal.yaml), MCP server integration, and frontend UIs (React + Vite + Shadcn chat apps). Use this skill whenever the user wants to query a knowledge base, search Timbal documentation, inspect project settings, create or edit timbal.yaml workflows, build any AI application on the Timbal platform, or build/modify a frontend UI for a Timbal app. Also trigger when the user mentions Timbal, knowledge bases, vector search, hybrid search, timbal.yaml, workforce streaming, chat UI, or assistant-ui — even if they don't explicitly say 'Timbal'."
 ---
 
 # Building AI Applications with Timbal
