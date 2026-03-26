@@ -20,7 +20,7 @@ Before any query, you must set the project context and inspect the schema:
 
 ```
 // 1. Set project context
-mcp__timbal__set_project_context({ git_remote_url: "<git-remote-url>" })
+mcp__timbal__set_project_context({ project_ref: "<git-remote-url-or-path-or-project-id>" })
 
 // 2. Get the schema so you know table names and columns
 mcp__timbal__get_knowledge_base_schema()

@@ -1,6 +1,6 @@
 ---
 name: timbal
-description: "Build AI applications with Timbal — knowledge bases (vector/FTS/hybrid search via SQL), multi-step workflows (timbal.yaml), MCP server integration, and frontend UIs (React + Vite + Shadcn chat apps). Use this skill whenever the user wants to query a knowledge base, search Timbal documentation, inspect project settings, create or edit timbal.yaml workflows, build any AI application on the Timbal platform, or build/modify a frontend UI for a Timbal app. Also trigger when the user mentions Timbal, knowledge bases, vector search, hybrid search, timbal.yaml, workforce streaming, chat UI, or assistant-ui — even if they don't explicitly say 'Timbal'."
+description: "Build AI applications with Timbal — knowledge bases (vector/FTS/hybrid search via SQL), multi-step workflows (timbal.yaml), MCP server integration, and frontend UIs (React + Vite + Shadcn chat apps). Use this skill whenever the user wants to: query a knowledge base; create or edit timbal.yaml workflows; build any AI application on the Timbal platform; modify frontend UI code (components, pages, styles, animations, themes, fonts, CSS, the chat interface, welcome screen, or anything under ui/src/); add or change API routes; or inspect project settings. Also trigger when the user mentions Timbal, knowledge bases, vector search, hybrid search, timbal.yaml, workforce, streaming, chat UI, assistant-ui, Shadcn, Radix, Tailwind theming, or index.css — even if they don't explicitly say 'Timbal'. When the user's request touches UI files, read references/ui.md first — it contains critical runtime environment constraints (no package manager available) and architectural rules."
 ---
 
 # Building AI Applications with Timbal
@@ -38,13 +38,13 @@ Key operations: `add-tool`, `remove-tool`, `add-step`, `remove-step`, `set-confi
 
 ## Knowledge base queries (MCP tools)
 
-1. **Set context first** — call `set_project_context` with the git remote URL
+1. **Set context first** — call `set_project_context` with a `project_ref` (git remote URL, filesystem path, or project ID)
 2. **Understand the schema** — call `get_knowledge_base_schema`
 3. **Query data** — use `query_knowledge_base` with SQL
 
 All MCP tools are prefixed with `mcp__timbal__`. Available tools:
 
-- **`set_project_context`** — required before `get_project`, `get_knowledge_base_schema`, or `query_knowledge_base`. Parameter: `git_remote_url`.
+- **`set_project_context`** — required before `get_project`, `get_knowledge_base_schema`, or `query_knowledge_base`. Parameter: `project_ref` — accepts a git remote URL, a git worktree path, a filesystem path, or a Timbal project ID.
 - **`whoami`** — current authenticated user. No setup needed.
 - **`get_project`** — project details. Requires `set_project_context`.
 - **`get_knowledge_base_schema`** — returns SQL DDL for KB tables. Requires `set_project_context`.
@@ -65,12 +65,15 @@ Use this skill and `references/` first. Only fall back to web search on `docs.ti
 |------|-----------|
 | AI workflow or agent | `references/codegen.md` |
 | Knowledge base queries | `references/knowledge-bases.md` |
-| Full-stack app (API + UI + Timbal) | `references/integration.md` (+ `knowledge-bases.md` as needed) |
+| API routes (Elysia + Timbal SDK) | `references/integration.md` |
+| Frontend UI (React, Vite, Shadcn, chat, styling) | `references/ui.md` |
+| Full-stack app (API + UI) | `references/integration.md` + `references/ui.md` |
 | Migrating from another platform | See migration guides below |
 
 ## References
 
-- **Integration** (Elysia API + React UI + Timbal SDK): see `references/integration.md`
+- **Frontend UI** (React, Vite, Shadcn, chat interface, styling, runtime constraints): see `references/ui.md`
+- **API Integration** (Elysia routes + Timbal SDK): see `references/integration.md`
 - Knowledge base query patterns: see `references/knowledge-bases.md`
 - Codegen CLI (add tools, steps, configure agents): see `references/codegen.md`
 - Migrating n8n workflows to Timbal: see `references/n8n-to-timbal.md`
