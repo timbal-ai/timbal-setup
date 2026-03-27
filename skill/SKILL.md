@@ -1,6 +1,6 @@
 ---
 name: timbal
-description: "Build AI applications with Timbal — knowledge bases (vector/FTS/hybrid search via SQL), multi-step workflows (timbal.yaml), MCP server integration, and frontend UIs (React + Vite + Shadcn chat apps). Use this skill whenever the user wants to: query a knowledge base; create or edit timbal.yaml workflows; build any AI application on the Timbal platform; modify frontend UI code (components, pages, styles, animations, themes, fonts, CSS, the chat interface, welcome screen, or anything under ui/src/); add or change API routes; or inspect project settings. Also trigger when the user mentions Timbal, knowledge bases, vector search, hybrid search, timbal.yaml, workforce, streaming, chat UI, assistant-ui, Shadcn, Radix, Tailwind theming, or index.css — even if they don't explicitly say 'Timbal'. When the user's request touches UI files, read references/ui.md first — it contains critical runtime environment constraints (no package manager available) and architectural rules."
+description: "Build AI applications with Timbal — knowledge bases (vector/FTS/hybrid search via SQL), multi-step workflows (timbal.yaml), MCP server integration, and frontend UIs (React + Vite + Shadcn chat apps). Use this skill whenever the user wants to: query a knowledge base; create or edit timbal.yaml workflows; modify workflow.py or any workforce file; add/remove agents, tools, steps, or edges in a workflow; build any AI application on the Timbal platform; modify frontend UI code (components, pages, styles, animations, themes, fonts, CSS, the chat interface, welcome screen, or anything under ui/src/); add or change API routes; or inspect project settings. Also trigger when the user mentions Timbal, knowledge bases, vector search, hybrid search, timbal.yaml, workforce, streaming, chat UI, assistant-ui, Shadcn, Radix, Tailwind theming, or index.css — even if they don't explicitly say 'Timbal'. When the user's request touches UI files, read references/ui.md first — it contains critical runtime environment constraints (no package manager available) and architectural rules."
 ---
 
 # Building AI Applications with Timbal
@@ -15,11 +15,10 @@ Timbal is a platform for building and deploying AI applications. It provides:
 
 ## Workflow rules — follow these exactly
 
-- **Always use `timbal-codegen` for any workflow modification.** Never use Edit or Write on workflow.py directly — that is an absolute last resort only if the codegen CLI cannot accomplish the task.
+- **Always use `timbal-codegen` for any workflow modification.** Never use Edit or Write on workflow.py under any circumstances — if you think codegen can't do it, you haven't read `references/codegen.md` yet. Read it first.
 - **Never do a dry-run** before applying codegen changes. Apply directly.
-- **Never verify after applying changes.** No re-reading workflow.py, no get-flow, no post-change checks. timbal-codegen is atomic and will error on failure — trust it.
 - **Read `references/codegen.md`** before using the codegen CLI — it has exact syntax, valid fields, and examples for every operation.
-- **Read workflow.py** to understand the current state when needed. Do not use `get-flow` for this — it returns verbose JSON that wastes tokens.
+- **Use `timbal-codegen get-flow --format compact`** to understand and verify workflow state — it executes the Python, validates the graph at runtime, and can surface import/configuration errors. Always pass `--format compact` for LLM consumption (16x smaller than the default JSON). Only read workflow.py when you need to inspect raw Python logic that get-flow doesn't expose.
 - **Chain independent CLI commands with `&&`** in a single Bash call when possible.
 
 ## Codegen operations (local CLI)
@@ -29,6 +28,8 @@ Use `timbal-codegen` directly — no MCP setup needed. See `references/codegen.m
 ```bash
 timbal-codegen [--path <workspace>] <operation> [options]
 ```
+
+**Always pass `--path <workforce-dir>`** (e.g. `--path workforce/jolly-ferret`) unless your shell's working directory is already inside the workforce folder. Without `--path`, codegen silently no-ops — it produces no output and makes no changes, with no error.
 
 Key operations: `add-tool`, `remove-tool`, `add-step`, `remove-step`, `set-config`, `set-param`, `add-edge`, `remove-edge`, `get-flow`, `get-tools`, `get-models`, `convert-to-workflow`.
 
@@ -42,12 +43,14 @@ Key operations: `add-tool`, `remove-tool`, `add-step`, `remove-step`, `set-confi
 2. **Understand the schema** — call `get_knowledge_base_schema`
 3. **Query data** — use `query_knowledge_base` with SQL
 
-All MCP tools are prefixed with `mcp__timbal__`. Available tools:
+All MCP tools are prefixed with `mcp__timbal__`. They are **registered tool calls in your tool list — not bash commands.** Never attempt to invoke them via Bash. If they don't appear in your available tools, the MCP server is not configured in this session.
 
-- **`set_project_context`** — required before `get_project`, `get_knowledge_base_schema`, or `query_knowledge_base`. Parameter: `project_ref` — accepts a git remote URL, a git worktree path, a filesystem path, or a Timbal project ID.
+Available tools:
+
+- **`set_project_context`** — required before `get_project`, `get_knowledge_base_schema`, or `query_knowledge_base`. Parameter: `project_ref` — accepts a git remote URL, a git worktree path, a filesystem path, or a Timbal project ID. The working directory path (e.g. `/mnt/efs/timbal/orgs/1/projects/255/main`) always works — prefer it over trying to find a git remote.
 - **`whoami`** — current authenticated user. No setup needed.
-- **`get_project`** — project details. Requires `set_project_context`.
-- **`get_knowledge_base_schema`** — returns SQL DDL for KB tables. Requires `set_project_context`.
+- **`get_project`** — org/environment/KB metadata and repository URL. Only call this when you specifically need that metadata — not as a routine step before KB queries.
+- **`get_knowledge_base_schema`** — returns SQL DDL for KB tables. Call this when you are about to query or modify KB data. Skip it for workflow or UI tasks.
 - **`query_knowledge_base`** — execute SQL against the KB. Requires `set_project_context`.
   - `sql` (string) — use `$1`, `$2` for placeholders
   - `params` (array, optional) — strings are auto-embedded into vectors
