@@ -1,6 +1,6 @@
 {
   "name": "@timbal-ai/timbal-setup",
-  "version": "0.11.3",
+  "version": "0.11.4",
   "description": "Configure any AI coding agent with the Timbal MCP server and skill files",
   "main": "lib/index.js",
   "bin": {
